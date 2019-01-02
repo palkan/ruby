@@ -6,6 +6,24 @@
 
 #define METHOD_DEBUG 0
 
+#define DEBUG_CACHE_HIT 0
+# if DEBUG_CACHE_HIT
+  #include <stdio.h>
+
+  void debug_method_cache(int hit) {
+    const char *env = getenv("RUBY_DEBUG_METHOD_CACHE");
+    if (env == NULL || strcmp("1", env) != 0) {
+      return;
+    }
+
+    if (hit) {
+      fprintf(stderr, "[DEBUG METHOD CACHE] hit\n");
+    } else {
+      fprintf(stderr, "[DEBUG METHOD CACHE] miss\n"); 
+    }
+  }
+# endif
+
 #if OPT_GLOBAL_METHOD_CACHE
 #ifndef GLOBAL_METHOD_CACHE_SIZE
 #define GLOBAL_METHOD_CACHE_SIZE 0x800
@@ -804,11 +822,17 @@ method_entry_get(VALUE klass, ID id, VALUE *defined_class_ptr)
 #endif
 	if (defined_class_ptr) *defined_class_ptr = ent->defined_class;
 	RB_DEBUG_COUNTER_INC(mc_global_hit);
+  #if DEBUG_CACHE_HIT
+    debug_method_cache(1);
+  #endif
 	return ent->me;
     }
 #endif
 
     RB_DEBUG_COUNTER_INC(mc_global_miss);
+    #if DEBUG_CACHE_HIT
+      debug_method_cache(0);
+    #endif
     return method_entry_get_without_cache(klass, id, defined_class_ptr);
 }
 
