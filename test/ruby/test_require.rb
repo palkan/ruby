@@ -1042,6 +1042,98 @@ class TestRequire < Test::Unit::TestCase
     RUBY
   end
 
+  def test_loaded_features_include
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, "test_lf_include.rb"), "")
+      paths, loaded = $LOAD_PATH.dup, $LOADED_FEATURES.dup
+      $LOAD_PATH.unshift(dir)
+      require "test_lf_include"
+
+      path = $LOADED_FEATURES.find { |f| f.end_with?("/test_lf_include.rb") }
+      assert path
+
+      # Present feature
+      assert $LOADED_FEATURES.include?(path)
+      assert $LOADED_FEATURES.each.to_a.include?(path)
+
+      # Missing feature
+      missing = "/nonexistent/nothing.rb"
+      assert !$LOADED_FEATURES.include?(missing)
+      assert !$LOADED_FEATURES.each.to_a.include?(missing)
+    ensure
+      $LOADED_FEATURES.replace(loaded)
+      $LOAD_PATH.replace(paths)
+    end
+  end
+
+  def test_loaded_features_include_with_non_string
+    assert !$LOADED_FEATURES.include?(nil)
+    assert !$LOADED_FEATURES.each.to_a.include?(nil)
+  end
+
+  def test_loaded_features_include_with_manual_push
+    loaded = $LOADED_FEATURES.dup
+    fake = "/tmp/__test_fake__.rb"
+
+    $LOADED_FEATURES << fake
+    assert $LOADED_FEATURES.each.to_a.include?(fake)
+    assert $LOADED_FEATURES.include?(fake)
+
+    $LOADED_FEATURES.delete(fake)
+    assert !$LOADED_FEATURES.include?(fake)
+    assert !$LOADED_FEATURES.each.to_a.include?(fake)
+
+    # Push with #push (direct array access)
+    $LOADED_FEATURES.push(fake)
+    assert $LOADED_FEATURES.each.to_a.include?(fake)
+    assert $LOADED_FEATURES.include?(fake)
+  ensure
+    $LOADED_FEATURES.replace(loaded)
+  end
+
+  def test_loaded_features_add_type_error
+    loaded = $LOADED_FEATURES.dup
+
+    assert_raise(TypeError) { $LOADED_FEATURES << 42 }
+    assert_raise(TypeError) { $LOADED_FEATURES << nil }
+    assert_raise(TypeError) { $LOADED_FEATURES << Object.new }
+
+    # Object responding to to_str is accepted
+    stringable = Class.new { def to_str; "/tmp/__test_stringable__.rb"; end }.new
+    $LOADED_FEATURES << stringable
+    assert $LOADED_FEATURES.include?("/tmp/__test_stringable__.rb")
+  ensure
+    $LOADED_FEATURES.replace(loaded)
+  end
+
+  def test_loaded_features_include_with_symlinks
+    Dir.mktmpdir do |dir|
+      real_dir = File.join(dir, "real")
+      link_dir = File.join(dir, "link")
+      Dir.mkdir(real_dir)
+      begin
+        File.symlink(real_dir, link_dir)
+      rescue NotImplementedError, Errno::EACCES
+        omit "File.symlink is not implemented"
+      end
+
+      File.write(File.join(real_dir, "test_symlink_feature.rb"), "")
+      symlink_path = File.join(link_dir, "test_symlink_feature.rb")
+      canonical_path = File.join(real_dir, "test_symlink_feature.rb")
+
+      paths, loaded = $LOAD_PATH.dup, $LOADED_FEATURES.dup
+      $LOAD_PATH.unshift(link_dir)
+      require "test_symlink_feature"
+
+      arr = $LOADED_FEATURES.each.to_a
+      assert_equal arr.include?(symlink_path), $LOADED_FEATURES.include?(symlink_path)
+      assert_equal arr.include?(canonical_path), $LOADED_FEATURES.include?(canonical_path)
+    ensure
+      $LOADED_FEATURES.replace(loaded)
+      $LOAD_PATH.replace(paths)
+    end
+  end
+
   def test_bug_21568
     load_path = $LOAD_PATH.dup
     loaded_featrures = $LOADED_FEATURES.dup

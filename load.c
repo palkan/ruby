@@ -691,6 +691,24 @@ rb_provide_feature(const rb_box_t *box, VALUE feature)
     reset_loaded_features_snapshot(box);
 }
 
+VALUE
+rb_loaded_features_include(VALUE self, VALUE item)
+{
+    if (!RB_TYPE_P(item, T_STRING)) return Qfalse;
+
+    return rb_provided(RSTRING_PTR(item)) ? Qtrue : Qfalse;
+}
+
+VALUE
+rb_loaded_features_add(VALUE self, VALUE feature)
+{
+    StringValue(feature);
+
+    const rb_box_t *box = rb_loading_box();
+    rb_provide_feature(box, feature);
+    return box->loaded_features;
+}
+
 void
 rb_provide(const char *feature)
 {

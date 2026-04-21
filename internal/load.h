@@ -16,5 +16,7 @@ VALUE rb_load_entrypoint(VALUE args);
 VALUE rb_require_relative_entrypoint(VALUE fname);
 int rb_require_internal(VALUE fname);
 NORETURN(void rb_load_fail(VALUE, const char*));
+VALUE rb_loaded_features_include(VALUE self, VALUE item);
+VALUE rb_loaded_features_add(VALUE self, VALUE feature);
 
 #endif /* INTERNAL_LOAD_H */
