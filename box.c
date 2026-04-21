@@ -151,6 +151,8 @@ box_entry_initialize(rb_box_t *box)
     box->loaded_features_index = st_init_numtable();
     box->loaded_features_realpaths = rb_hash_dup(root->loaded_features_realpaths);
     box->loaded_features_realpath_map = rb_hash_dup(root->loaded_features_realpath_map);
+    rb_define_singleton_method(box->loaded_features, "include?", rb_loaded_features_include, 1);
+    rb_define_singleton_method(box->loaded_features, "<<", rb_loaded_features_add, 1);
     box->loading_table = st_init_strtable();
     box->ruby_dln_libmap = rb_hash_new_with_size(0);
     box->gvar_tbl = rb_hash_new_with_size(0);
@@ -863,6 +865,8 @@ initialize_root_box(void)
     rb_obj_hide(root->loaded_features_realpaths);
     root->loaded_features_realpath_map = rb_hash_new();
     rb_obj_hide(root->loaded_features_realpath_map);
+    rb_define_singleton_method(root->loaded_features, "include?", rb_loaded_features_include, 1);
+    rb_define_singleton_method(root->loaded_features, "<<", rb_loaded_features_add, 1);
 
     root->ruby_dln_libmap = rb_hash_new_with_size(0);
     root->gvar_tbl = rb_hash_new_with_size(0);
